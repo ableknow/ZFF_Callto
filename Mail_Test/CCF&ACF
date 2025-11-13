@@ -1,0 +1,9 @@
+import requests
+
+## ID LIST
+T_ID = "$"
+C_ID = "$"
+CS_ID = "$"
+
+## Get token
+url = 

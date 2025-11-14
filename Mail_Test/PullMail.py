@@ -5,9 +5,10 @@ import csv
 # ==========================
 # Config
 # ==========================
-tenant_id = "YOUR_TENANT_ID"
-client_id = "YOUR_CLIENT_ID"
-client_secret = "YOUR_CLIENT_SECRET"
+tenant_id = "t"
+client_id = "c"
+client_secret = "cs"
+user_email = "user@domian"
 
 # File name
 json_file = "outlook_emails.json"
@@ -25,6 +26,8 @@ def get_access_token():
         "scope": "https://graph.microsoft.com/.default"
     }
     r = requests.post(url, data=data)
+    print("[DEBUG] Token Status:", r.status_code)
+    print("[DEBUG] Token Response:", r.text)
     r.raise_for_status()
     token = r.json()["access_token"]
     return token
@@ -34,15 +37,21 @@ def get_access_token():
 # ==========================
 def fetch_all_emails(token):
     headers = {"Authorization": f"Bearer {token}"}
-    url = "https://graph.microsoft.com/v1.0/me/messages?$top=50"  # Max 50
+    url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages?$top=50"
+
+    print("[DEBUG] First Request URL:", url)
+
     all_emails = []
 
     while url:
         response = requests.get(url, headers=headers)
+        print("[DEBUG] Status:", response.status_code)
+        print("[DEBUG] Response:", response.text[:300])
         response.raise_for_status()
+
         data = response.json()
         all_emails.extend(data.get("value", []))
-        url = data.get("@odata.nextLink")  # Get Next Pages
+        url = data.get("@odata.nextLink")
 
     return all_emails
 
@@ -59,7 +68,6 @@ def save_as_json(emails, filename):
 def save_as_csv(emails, filename):
     if not emails:
         return
-    # type
     keys = ["id", "subject", "receivedDateTime", "from", "toRecipients", "bodyPreview"]
     with open(filename, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=keys)
@@ -76,17 +84,17 @@ def save_as_csv(emails, filename):
             writer.writerow(row)
 
 # ==========================
-# Print Text
+# Main
 # ==========================
 def main():
     token = get_access_token()
     print("Pulling Mail...")
     emails = fetch_all_emails(token)
-    print(f"Is The : {len(emails)}")
+    print(f"Total Emails: {len(emails)}")
     save_as_json(emails, json_file)
-    print(f"Save JSON Files: {json_file}")
+    print(f"Saved JSON: {json_file}")
     save_as_csv(emails, csv_file)
-    print(f"Save CSV Files: {csv_file}")
+    print(f"Saved CSV: {csv_file}")
 
 if __name__ == "__main__":
     main()
